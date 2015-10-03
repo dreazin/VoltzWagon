@@ -8,7 +8,7 @@ import java.lang.Math;
 /**
  * VoltzWagon - a robot by (your name here)
  */
-public class VoltzWagon extends Robot
+public class VoltzWagon extends AdvancedRobot
 {
 	private class SeenRobot {
 		private long tickSeen;
@@ -77,7 +77,9 @@ public class VoltzWagon extends Robot
 		// After trying out your robot, try uncommenting the import at the top,
 		// and the next line:
 
-		// setColors(Color.red,Color.blue,Color.green); // body,gun,radar
+		setColors(Color.red,Color.white,Color.blue); // body,gun,radar
+		setAdjustRadarForGunTurn(true);
+		setAdjustGunForRobotTurn(true);
 
 		// Robot main loop
 		while(true) {
@@ -119,13 +121,20 @@ public class VoltzWagon extends Robot
 	 * onScannedRobot: What to do when you see another robot
 	 */
 	public void onScannedRobot(ScannedRobotEvent e) {
-		// Replace the next line with any behavior you would like
 		if (enemy == null)
 			enemy = new SeenRobot(e);
 		else
 			enemy.update(e);
-		
-		
+		/*double toTurn = (getHeading()-getGunHeading())+e.getBearing();
+		if (toTurn>360) {toTurn-=360;}
+		if (toTurn>180) {
+			turnGunLeft(toTurn-180);
+		} else {
+			turnGunRight(toTurn);
+		}
+		//turnRight(e.getBearing());
+		//System.out.println(Double.toString(toTurn));
+		fire(3);//*/
 	}
 
 	/**
