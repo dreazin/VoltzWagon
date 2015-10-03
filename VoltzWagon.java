@@ -71,6 +71,7 @@ public class VoltzWagon extends AdvancedRobot
 	public int hitCount = 5;
 	public int missedCount = 0;
 	public int targetDist = 250;
+	public int fireFlag = 0;
 	public void run() {
 		// Initialization of the robot should be put here
 		enemy = null;
@@ -92,11 +93,14 @@ public class VoltzWagon extends AdvancedRobot
 			/*----- Update Scanner Position -----*/
 			updateScanner();
             
-            if (oldEng-enemy.getEnergy()>=1 && oldEng-enemy.getEnergy()<=3) {shotCount++;}
+			if (enemy != null) {
+            	if (oldEng-enemy.getEnergy()>=1 && oldEng-enemy.getEnergy()<=3) {shotCount++;}
 
-            oldEng=enemy.getEnergy();
+            	oldEng=enemy.getEnergy();
+			}
 			
-			execute();
+			executePer();
+			
 		}
 	}
 
@@ -153,6 +157,9 @@ public class VoltzWagon extends AdvancedRobot
 			enemy.update(e);
         
 		// Replace the next line with any behavior you would like
+		
+		fireFlag = (int) hitCount/5;
+		
 		double toTurn = (getHeading()-getGunHeading())+e.getBearing();
 		if (toTurn>360) {toTurn-=360;}
 		if (toTurn<-360) {toTurn+=360;}
@@ -163,7 +170,6 @@ public class VoltzWagon extends AdvancedRobot
 		}
 		//turnRight(e.getBearing());
 		//System.out.println(Double.toString(toTurn));
-		setFire(3);//
 		
 		if (e.getDistance()>250) {
 			toTurn = e.getBearing()+45;
@@ -206,7 +212,7 @@ public class VoltzWagon extends AdvancedRobot
 		setAhead(30);
 		dir = !dir;
 		updateScanner();
-		execute();
+		executePer();
 	}	
 	
 	// Fires every tick
@@ -214,7 +220,12 @@ public class VoltzWagon extends AdvancedRobot
 		RobotStatus status = e.getStatus();
 		
 	}
-    
+	
+  	// Fires every tick
+	public void onBulletHit(BulletHitEvent e) {
+		hitCount++;		
+	}
+  
     public void onBulletMissed(BulletMissedEvent e) {
 		missedCount++;
 		System.out.println("Missed :(");
@@ -224,6 +235,14 @@ public class VoltzWagon extends AdvancedRobot
 			missedCount=0;
 		}
 		
+	}
+	
+	public void executePer() {
+		execute();	
+		if (fireFlag!=0) {
+			setFire(fireFlag);
+			fireFlag=0;
+		}
 	}
 	
 }
