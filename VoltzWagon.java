@@ -66,6 +66,11 @@ public class VoltzWagon extends AdvancedRobot
 	 * run: VoltzWagon's default behavior
 	 */
 	public boolean dir = true;
+	public double oldEng = 100.0;
+	public int shotCount = 0;
+	public int hitCount = 5;
+	public int missedCount = 0;
+	public int targetDist = 250;
 	public void run() {
 		// Initialization of the robot should be put here
 		enemy = null;
@@ -86,6 +91,10 @@ public class VoltzWagon extends AdvancedRobot
 		while(true) {
 			/*----- Update Scanner Position -----*/
 			updateScanner();
+            
+            if (oldEng-enemy.getEnergy()>=1 && oldEng-enemy.getEnergy()<=3) {shotCount++;}
+
+            oldEng=enemy.getEnergy();
 			
 			execute();
 		}
@@ -203,6 +212,17 @@ public class VoltzWagon extends AdvancedRobot
 	// Fires every tick
 	public void onStatus(StatusEvent e) {
 		RobotStatus status = e.getStatus();
+		
+	}
+    
+    public void onBulletMissed(BulletMissedEvent e) {
+		missedCount++;
+		System.out.println("Missed :(");
+		if (missedCount == 2 && targetDist>0) {
+			targetDist-=20;
+			System.out.println("New Target Distance: "+Integer.toString(targetDist));
+			missedCount=0;
+		}
 		
 	}
 	
