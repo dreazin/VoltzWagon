@@ -1,13 +1,13 @@
 package VoltzWagon;
 import robocode.*;
-//import java.awt.Color;
+import java.awt.Color;
 
 // API help : http://robocode.sourceforge.net/docs/robocode/robocode/Robot.html
 
 /**
  * VoltzWagon - a robot by (your name here)
  */
-public class VoltzWagon extends Robot
+public class VoltzWagon extends AdvancedRobot
 {
 	/**
 	 * run: VoltzWagon's default behavior
@@ -18,15 +18,17 @@ public class VoltzWagon extends Robot
 		// After trying out your robot, try uncommenting the import at the top,
 		// and the next line:
 
-		// setColors(Color.red,Color.blue,Color.green); // body,gun,radar
+		setColors(Color.red,Color.white,Color.blue); // body,gun,radar
+		setAdjustRadarForGunTurn(true);
+		setAdjustGunForRobotTurn(true);
 
 		// Robot main loop
 		while(true) {
 			// Replace the next 4 lines with any behavior you would like
 			ahead(100);
-			turnGunRight(360);
+			turnRadarRight(360);
 			back(100);
-			turnGunRight(360);
+			turnRadarRight(360);
 		}
 	}
 
@@ -35,7 +37,16 @@ public class VoltzWagon extends Robot
 	 */
 	public void onScannedRobot(ScannedRobotEvent e) {
 		// Replace the next line with any behavior you would like
-		fire(1);//
+		double toTurn = (getHeading()-getGunHeading())+e.getBearing();
+		if (toTurn>360) {toTurn-=360;}
+		if (toTurn>180) {
+			turnGunLeft(toTurn-180);
+		} else {
+			turnGunRight(toTurn);
+		}
+		//turnRight(e.getBearing());
+		//System.out.println(Double.toString(toTurn));
+		fire(3);//
 	}
 
 	/**
