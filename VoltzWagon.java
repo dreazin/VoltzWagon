@@ -65,6 +65,7 @@ public class VoltzWagon extends AdvancedRobot
 	/**
 	 * run: VoltzWagon's default behavior
 	 */
+	public boolean dir = true;
 	public void run() {
 		// Initialization of the robot should be put here
 		enemy = null;
@@ -139,6 +140,7 @@ public class VoltzWagon extends AdvancedRobot
 			enemy.update(e);
 		/*double toTurn = (getHeading()-getGunHeading())+e.getBearing();
 		if (toTurn>360) {toTurn-=360;}
+		if (toTurn<-360) {toTurn+=360;}
 		if (toTurn>180) {
 			turnGunLeft(toTurn-180);
 		} else {
@@ -146,7 +148,30 @@ public class VoltzWagon extends AdvancedRobot
 		}
 		//turnRight(e.getBearing());
 		//System.out.println(Double.toString(toTurn));
-		fire(3);//*/
+		fire(3);//
+		
+		if (e.getDistance()>250) {
+			toTurn = e.getBearing()+45;
+		} else if (e.getDistance()<200) {
+			toTurn = e.getBearing()+135;
+		} else {
+			toTurn = e.getBearing()+90;
+		}
+		
+		if (!dir) {
+			System.out.println("DIR!");
+			if (e.getDistance()>250) {
+				toTurn = e.getBearing()-180+135;
+			} else if (e.getDistance()<200) {
+				toTurn = e.getBearing()-180+45;
+			} else {
+				toTurn = e.getBearing()-90;
+			}
+		}
+
+		System.out.println(Double.toString(toTurn));
+		setTurnRight(toTurn);
+		setAhead(30);
 	}
 
 	/**
@@ -154,7 +179,7 @@ public class VoltzWagon extends AdvancedRobot
 	 */
 	public void onHitByBullet(HitByBulletEvent e) {
 		// Replace the next line with any behavior you would like
-		back(10);
+		//back(10);
 	}
 	
 	/**
@@ -162,8 +187,10 @@ public class VoltzWagon extends AdvancedRobot
 	 */
 	public void onHitWall(HitWallEvent e) {
 		// Replace the next line with any behavior you would like
-		back(20);
-	}
+		turnRight(180);
+		ahead(30);
+		dir = !dir;
+	}	
 	
 	// Fires every tick
 	public void onStatus(StatusEvent e) {
