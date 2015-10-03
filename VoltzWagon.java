@@ -163,6 +163,29 @@ public class VoltzWagon extends AdvancedRobot
 		double toTurn = (getHeading()-getGunHeading())+e.getBearing();
 		if (toTurn>360) {toTurn-=360;}
 		if (toTurn<-360) {toTurn+=360;}
+        
+        double enemyVAngle = e.getHeading() + getHeading() + e.getBearing();
+        if (enemyVAngle > 360) enemyVAngle -= 360;
+        if (enemyVAngle < 0) enemyVAngle += 360;
+        
+        double bulletVelocity = 20 - 3 * Math.min(fireFlag, 3);
+        double flightTime = e.getDistance() / (bulletVelocity - e.getVelocity() * Math.cos(Math.toRadians(enemyVAngle)));
+        double leadAngle = Math.toDegrees(Math.asin((flightTime * e.getVelocity() * Math.sin(Math.toRadians(enemyVAngle))) /
+                                                    (e.getDistance() + flightTime * e.getVelocity() * Math.cos(Math.toRadians(enemyVAngle)))));
+                                                    
+        System.out.println("-----");
+        System.out.println("Bullet velocity is " + Double.toString(bulletVelocity));
+        System.out.println("enermyVAngle is " + Double.toString(enemyVAngle));
+        System.out.println("Lead angle is " + Double.toString(leadAngle));
+        
+        toTurn += leadAngle;
+		if (toTurn>360) {toTurn-=360;}
+		if (toTurn<-360) {toTurn+=360;}
+        
+        
+        
+        
+        
 		if (toTurn>180) {
 			setTurnGunLeft(toTurn-180);
 		} else {
