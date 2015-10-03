@@ -85,47 +85,52 @@ public class VoltzWagon extends AdvancedRobot
 		// Robot main loop
 		while(true) {
 			/*----- Update Scanner Position -----*/
-			if (enemy == null) {
-				// No enemy seen yet
-				// Scan clockwise for now, 45 degrees/tick
-				setTurnRadarRight(45);
-			}
-			else if (getTime() - enemy.getTickSeen() > TICK_TIMEOUT) {
-				// Data is old and unreliable
-				enemy = null;
-			}
-			else {
-				// Take action based on data we have
-				System.out.println("Robot heading is " + Double.toString(getHeading()));
-				System.out.println("Enemy bearing is " + Double.toString(enemy.getBearing()));
-				double targAngle = getHeading() + enemy.getBearing();
-				if (targAngle < 0) targAngle += 360;
-				if (targAngle > 360) targAngle -= 360;
-				System.out.println("targ angle is " + Double.toString(targAngle));
-				
-				double radarBearing = targAngle - getRadarHeading();
-				if (radarBearing > 180)
-					targAngle = getRadarHeading() - targAngle;
-				if (radarBearing < 0) {
-					System.out.println("Turning radar left");
-					if (Math.abs(radarBearing) > 45)
-						setTurnRadarLeft(45);
-					else
-						setTurnRadarLeft(Math.abs(radarBearing));
-				}
-				else {
-					System.out.println("Turning radar right");
-					if (radarBearing > 45)
-						setTurnRadarRight(45);
-					else
-						setTurnRadarRight(radarBearing);
-				}
-				System.out.println("Enemy is absolute " + Double.toString(targAngle));
-				System.out.println("Radar is currently " + Double.toString(getRadarHeading()));
-				System.out.println("Radar bearing is " + Double.toString(radarBearing));
-			}
+			updateScanner();
 			
 			execute();
+		}
+	}
+
+	public void updateScanner() {
+		if (enemy == null) {
+			// No enemy seen yet
+			// Scan clockwise for now, 45 degrees/tick
+			setTurnRadarRight(45);
+			System.out.println("Scanning...");
+		}
+		else if (getTime() - enemy.getTickSeen() > TICK_TIMEOUT) {
+			// Data is old and unreliable
+			enemy = null;
+			System.out.println("Throwing out old data...");
+		}
+		else {
+			// Take action based on data we have
+			// Calculate target's position
+			double targAngle = getHeading() + enemy.getBearing();
+			if (targAngle < 0) targAngle += 360;
+			if (targAngle > 360) targAngle -= 360;
+			
+			// Calculate the amount the radar must move (account for rollover)
+			double radarBearing = targAngle - getRadarHeading();
+			if (radarBearing < -180)
+				radarBearing += 360;
+			else if (radarBearing > 180)
+				radarBearing -= 360;
+			
+			// Move as far as we can in one tick,
+			// overshoot in case they move
+			if (radarBearing < 0) {
+				if (Math.abs(radarBearing) > 45)
+					setTurnRadarLeft(45);
+				else
+					setTurnRadarLeft(Math.min(Math.abs(radarBearing) + 45/2, 45));
+			}
+			else {
+				if (radarBearing > 45)
+					setTurnRadarRight(45);
+				else
+					setTurnRadarRight(Math.min(radarBearing + 45/2, 45));
+			}
 		}
 	}
 
@@ -160,7 +165,7 @@ public class VoltzWagon extends AdvancedRobot
 		}
 		
 		if (!dir) {
-			System.out.println("DIR!");
+			//System.out.println("DIR!");
 			if (e.getDistance()>250) {
 				toTurn = e.getBearing()-180+135;
 			} else if (e.getDistance()<200) {
@@ -170,7 +175,7 @@ public class VoltzWagon extends AdvancedRobot
 			}
 		}
 
-		System.out.println(Double.toString(toTurn));
+		//System.out.println(Double.toString(toTurn));
 		setTurnRight(toTurn);
 		setAhead(30);
 	}
@@ -188,9 +193,11 @@ public class VoltzWagon extends AdvancedRobot
 	 */
 	public void onHitWall(HitWallEvent e) {
 		// Replace the next line with any behavior you would like
-		turnRight(180);
-		ahead(30);
+		setTurnRight(180);
+		setAhead(30);
 		dir = !dir;
+		updateScanner();
+		execute();
 	}	
 	
 	// Fires every tick
