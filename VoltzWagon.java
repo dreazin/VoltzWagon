@@ -1,5 +1,6 @@
 package VoltzWagon;
 import robocode.*;
+import robocode.util.Utils;
 import java.awt.Color;
 import java.lang.Math;
 
@@ -8,6 +9,7 @@ import java.lang.Math;
 /**
  * VoltzWagon - a robot by Dave and John
  */
+
 public class VoltzWagon extends AdvancedRobot
 {
 	private class SeenRobot {
@@ -56,6 +58,154 @@ public class VoltzWagon extends AdvancedRobot
 		}
 	}
 	
+	public class Coordinate {
+		public double x;
+		public double y;
+		
+		public Coordinate(double x,double y) {
+			this.x=x;
+			this.y=y;
+		}
+		public Coordinate() {
+			this.x=0;
+			this.y=0;
+		}
+		public void set (double x, double y) {
+			this.x=x;
+			this.y=y;
+		}
+	}
+	
+
+	public class Intercept {
+	 public Coordinate impactPoint = new Coordinate(0,0);
+	 public double bulletHeading_deg;
+	
+	 protected Coordinate bulletStartingPoint = new Coordinate();
+	 protected Coordinate targetStartingPoint = new Coordinate();
+	 public double targetHeading;
+	 public double targetVelocity;
+	 public double bulletPower;
+	 public double angleThreshold;
+	 public double distance;
+	
+	 protected double impactTime;
+	 protected double angularVelocity_rad_per_sec;
+	
+	 public void calculate (
+	
+	 // Initial bullet position x coordinate 
+	 double xb, 
+	 // Initial bullet position y coordinate
+	 double yb, 
+	 // Initial target position x coordinate
+	 double xt, 
+	 // Initial target position y coordinate
+	 double yt, 
+	 // Target heading
+	 double tHeading, 
+	 // Target velocity
+	 double vt, 
+	 // Power of the bullet that we will be firing
+	 double bPower, 
+	 // Angular velocity of the target
+	 double angularVelocity_deg_per_sec 
+	)
+	{
+	angularVelocity_rad_per_sec = 
+	 Math.toRadians(angularVelocity_deg_per_sec);
+	
+	bulletStartingPoint.set(xb, yb);
+	targetStartingPoint.set(xt, yt);
+	
+	targetHeading = tHeading;
+	targetVelocity = vt;
+	bulletPower = bPower;
+	double vb = 20-3*bulletPower;
+	
+	double dX,dY;
+	
+	// Start with initial guesses at 10 and 20 ticks
+	impactTime = getImpactTime(10, 20, 0.01); 
+	impactPoint = getEstimatedPosition(impactTime);
+	
+	dX = (impactPoint.x - bulletStartingPoint.x);
+	dY = (impactPoint.y - bulletStartingPoint.y);
+	
+	distance = Math.sqrt(dX*dX+dY*dY);
+	
+	bulletHeading_deg = Math.toDegrees(Math.atan2(dX,dY));
+	angleThreshold = Math.toDegrees
+	 (Math.atan(1/distance));
+	}
+	
+	protected Coordinate getEstimatedPosition(double time) {
+	
+	double x = targetStartingPoint.x + 
+	   targetVelocity * time * Math.sin(Math.toRadians(targetHeading));
+	double y = targetStartingPoint.y + 
+	   targetVelocity * time * Math.cos(Math.toRadians(targetHeading));
+	return new Coordinate(x,y);
+	}
+	
+	private double f(double time) {
+	
+	double vb = 20-3*bulletPower;
+	
+	Coordinate targetPosition = getEstimatedPosition(time);
+	double dX = (targetPosition.x - bulletStartingPoint.x);
+	double dY = (targetPosition.y - bulletStartingPoint.y);
+	
+	return Math.sqrt(dX*dX + dY*dY) - vb * time;
+	}
+	
+	private double getImpactTime(double t0, 
+	  double t1, double accuracy) {
+	
+	double X = t1;
+	double lastX = t0;
+	int iterationCount = 0;
+	double lastfX = f(lastX);
+	
+	while ((Math.abs(X - lastX) >= accuracy) && 
+	  (iterationCount < 15)) {
+	
+	iterationCount++;
+	double fX = f(X);
+	
+	if ((fX-lastfX) == 0.0) break;
+	
+	double nextX = X - fX*(X-lastX)/(fX-lastfX);
+	lastX = X;
+	X = nextX;
+	lastfX = fX;
+	}
+	
+	return X;
+	}
+	}
+
+	public class CircularIntercept extends Intercept {
+	 protected Coordinate getEstimatedPosition(double time) {
+	  if (Math.abs(angularVelocity_rad_per_sec) 
+	   <= Math.toRadians(0.1)) {
+	  return super.getEstimatedPosition(time);
+	 }
+	
+	    double initialTargetHeading = Math.toRadians(targetHeading);
+	    double finalTargetHeading   = initialTargetHeading +  
+	     angularVelocity_rad_per_sec * time;
+	    double x = targetStartingPoint.x - targetVelocity /
+	     angularVelocity_rad_per_sec *(Math.cos(finalTargetHeading) - 
+	     Math.cos(initialTargetHeading));
+	    double y = targetStartingPoint.y - targetVelocity / 
+	     angularVelocity_rad_per_sec *
+	     (Math.sin(initialTargetHeading) - 
+	     Math.sin(finalTargetHeading));
+	    return new Coordinate(x,y);
+	}
+	}
+
 	// Only doing 1v1 so we can hard define out target
 	private SeenRobot enemy;
 	
@@ -72,8 +222,12 @@ public class VoltzWagon extends AdvancedRobot
 	public int missedCount = 0;
 	public int targetDist = 250;
 	public int fireFlag = 0;
+	public int ROBOT_RADIUS = 1;
 	public void run() {
 		// Initialization of the robot should be put here
+		
+		System.out.println("In Main!");
+
 		enemy = null;
 		setScanColor(Color.yellow);
 		// Separate our turns
@@ -160,20 +314,43 @@ public class VoltzWagon extends AdvancedRobot
 		
 		fireFlag = (int) hitCount/5;
 		
-		double toTurn = (getHeading()-getGunHeading())+e.getBearing();
-		if (toTurn>360) {toTurn-=360;}
-		if (toTurn<-360) {toTurn+=360;}
+		double absAngle = getHeading() + e.getBearing();		
+
+		//System.out.println("absAngle: " + absAngle);		
+
+		if (absAngle>360) {absAngle-=360;}
+		if (absAngle<-360) {absAngle+=360;}
+		
+		double toTurn2 = smartFire(getX(), getY(), getX()+(e.getDistance()*Math.sin(Math.toRadians(absAngle))), getY()+(e.getDistance()*Math.cos(Math.toRadians(absAngle))),e.getHeading(),e.getVelocity(), fireFlag);
+		double toTurn = (toTurn2-getGunHeading());
+		if (toTurn>=360) {toTurn-=360;}
+		if (toTurn<=-360) {toTurn+=360;}
+		
+
+
 		if (toTurn>180) {
-			setTurnGunLeft(toTurn-180);
+			setTurnGunRight(toTurn-360);
+			System.out.println("Turn 1: "+Double.toString(toTurn-360));
+			if (toTurn-360>20 || toTurn-360<-20) {fireFlag=0;}
 		} else {
-			setTurnGunRight(toTurn);
+			if (toTurn<-180) {
+				setTurnGunRight(toTurn+360);
+				System.out.println("Turn 2: "+Double.toString(toTurn+360));
+				if (toTurn+360>20 || toTurn+360<-20) {fireFlag=0;}
+			} else {
+				setTurnGunRight(toTurn);
+				System.out.println("Turn 3: "+Double.toString(toTurn));
+				if (toTurn>20 || toTurn<-20) {fireFlag=0;}
+			}
 		}
 		//turnRight(e.getBearing());
+		//setTurnGunRight(Utils.normalRelativeAngle(toTurn));
 		//System.out.println(Double.toString(toTurn));
+		//System.out.println(Double.toString(toTurn+360));
 		
-		if (e.getDistance()>250) {
+		if (e.getDistance()>targetDist) {
 			toTurn = e.getBearing()+45;
-		} else if (e.getDistance()<200) {
+		} else if (e.getDistance()<targetDist-50) {
 			toTurn = e.getBearing()+135;
 		} else {
 			toTurn = e.getBearing()+90;
@@ -181,9 +358,9 @@ public class VoltzWagon extends AdvancedRobot
 		
 		if (!dir) {
 			//System.out.println("DIR!");
-			if (e.getDistance()>250) {
+			if (e.getDistance()>targetDist) {
 				toTurn = e.getBearing()-180+135;
-			} else if (e.getDistance()<200) {
+			} else if (e.getDistance()<targetDist-50) {
 				toTurn = e.getBearing()-180+45;
 			} else {
 				toTurn = e.getBearing()-90;
@@ -204,8 +381,7 @@ public class VoltzWagon extends AdvancedRobot
 	}
 	
 	/**
-	 * onHitWall: What to do when you hit a wall
-	 */
+	 * onHitWall: What to do when you hit a wall	 */
 	public void onHitWall(HitWallEvent e) {
 		// Replace the next line with any behavior you would like
 		setTurnRight(180);
@@ -228,10 +404,10 @@ public class VoltzWagon extends AdvancedRobot
   
     public void onBulletMissed(BulletMissedEvent e) {
 		missedCount++;
-		System.out.println("Missed :(");
-		if (missedCount == 2 && targetDist>0) {
+		//System.out.println("Missed :(");
+		if (missedCount == 2 && targetDist>=20) {
 			targetDist-=20;
-			System.out.println("New Target Distance: "+Integer.toString(targetDist));
+			//System.out.println("New Target Distance: "+Integer.toString(targetDist));
 			missedCount=0;
 		}
 		
@@ -245,4 +421,32 @@ public class VoltzWagon extends AdvancedRobot
 		}
 	}
 	
+	public double smartFire(double ourRobotPositionX, double ourRobotPositionY,double currentTargetPositionX,double currentTargetPositionY,double curentTargetHeading_deg,double currentTargetVelocity,int bulletPower) {
+		
+		//System.out.println("Our X: "+Double.toString(ourRobotPositionX));
+		//System.out.println("Our Y: "+Double.toString(ourRobotPositionY));
+		//System.out.println("Their heading: "+Double.toString(curentTargetHeading_deg));
+		//System.out.println("Their velocit: "+Double.toString(currentTargetVelocity));
+		Intercept intercept = new Intercept();
+		intercept.calculate
+		(
+		  ourRobotPositionX,
+		  ourRobotPositionY,
+		  currentTargetPositionX,
+		  currentTargetPositionY,
+		  curentTargetHeading_deg,
+		  currentTargetVelocity,
+		  bulletPower,
+		  0 // Angular velocity
+		);
+		
+		// Helper function that converts any angle into  
+		// an angle between +180 and -180 degrees.
+		double turnAngle = Utils.normalRelativeAngle(intercept.bulletHeading_deg - getGunHeading());
+		
+		//System.out.println("angle to shoot: "+Double.toString(intercept.bulletHeading_deg));
+		
+		return intercept.bulletHeading_deg;
+
+	}
 }
