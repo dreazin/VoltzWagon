@@ -66,6 +66,11 @@ public class VoltzWagon extends AdvancedRobot
 	 * run: VoltzWagon's default behavior
 	 */
 	public boolean dir = true;
+	public double oldEng = 100.0;
+	public int shotCount = 0;
+	public int hitCount = 5;
+	public int missedCount = 0;
+	public int targetDist = 250;
 	public void run() {
 		// Initialization of the robot should be put here
 		enemy = null;
@@ -96,33 +101,37 @@ public class VoltzWagon extends AdvancedRobot
 			}
 			else {
 				// Take action based on data we have
-				System.out.println("Robot heading is " + Double.toString(getHeading()));
-				System.out.println("Enemy bearing is " + Double.toString(enemy.getBearing()));
+				if (oldEng-enemy.getEnergy()>=1 && oldEng-enemy.getEnergy()<=3) {shotCount++;}
+				//System.out.println("Robot heading is " + Double.toString(getHeading()));
+				//System.out.println("Enemy bearing is " + Double.toString(enemy.getBearing()) + " with " + Integer.toString(shotCount) + " shots.");
+				//System.out.println("Enemy energy is " + Double.toString(enemy.getEnergy()));
+
+				oldEng=enemy.getEnergy();
 				double targAngle = getHeading() + enemy.getBearing();
 				if (targAngle < 0) targAngle += 360;
 				if (targAngle > 360) targAngle -= 360;
-				System.out.println("targ angle is " + Double.toString(targAngle));
+				//System.out.println("targ angle is " + Double.toString(targAngle));
 				
 				double radarBearing = targAngle - getRadarHeading();
 				if (radarBearing > 180)
 					targAngle = getRadarHeading() - targAngle;
 				if (radarBearing < 0) {
-					System.out.println("Turning radar left");
+					//System.out.println("Turning radar left");
 					if (Math.abs(radarBearing) > 45)
 						setTurnRadarLeft(45);
 					else
 						setTurnRadarLeft(Math.abs(radarBearing));
 				}
 				else {
-					System.out.println("Turning radar right");
+					//System.out.println("Turning radar right");
 					if (radarBearing > 45)
 						setTurnRadarRight(45);
 					else
 						setTurnRadarRight(radarBearing);
 				}
-				System.out.println("Enemy is absolute " + Double.toString(targAngle));
-				System.out.println("Radar is currently " + Double.toString(getRadarHeading()));
-				System.out.println("Radar bearing is " + Double.toString(radarBearing));
+				//System.out.println("Enemy is absolute " + Double.toString(targAngle));
+				//System.out.println("Radar is currently " + Double.toString(getRadarHeading()));
+				//System.out.println("Radar bearing is " + Double.toString(radarBearing));
 			}
 			
 			execute();
@@ -148,29 +157,29 @@ public class VoltzWagon extends AdvancedRobot
 			setTurnGunRight(toTurn);
 		}
 		//turnRight(e.getBearing());
-		//System.out.println(Double.toString(toTurn));
-		setFire(3);//
+		////System.out.println(Double.toString(toTurn));
+		setFire((int) hitCount/5);
 		
-		if (e.getDistance()>250) {
+		if (e.getDistance()>targetDist) {
 			toTurn = e.getBearing()+45;
-		} else if (e.getDistance()<200) {
+		} else if (e.getDistance()<targetDist-50) {
 			toTurn = e.getBearing()+135;
 		} else {
 			toTurn = e.getBearing()+90;
 		}
 		
 		if (!dir) {
-			System.out.println("DIR!");
-			if (e.getDistance()>250) {
+			//System.out.println("DIR!");
+			if (e.getDistance()>targetDist) {
 				toTurn = e.getBearing()-180+135;
-			} else if (e.getDistance()<200) {
+			} else if (e.getDistance()<targetDist-50) {
 				toTurn = e.getBearing()-180+45;
 			} else {
 				toTurn = e.getBearing()-90;
 			}
 		}
 
-		System.out.println(Double.toString(toTurn));
+		//System.out.println(Double.toString(toTurn));
 		setTurnRight(toTurn);
 		setAhead(30);
 	}
@@ -195,7 +204,26 @@ public class VoltzWagon extends AdvancedRobot
 	
 	// Fires every tick
 	public void onStatus(StatusEvent e) {
-		RobotStatus status = e.getStatus();
+		//RobotStatus status = e.getStatus();
+		
+	}
+	
+	// Fires every tick
+	public void onBulletHit(BulletHitEvent e) {
+		hitCount++;
+		
+	}
+	
+	
+	// Fires every tick
+	public void onBulletMissed(BulletMissedEvent e) {
+		missedCount++;
+		System.out.println("Missed :(");
+		if (missedCount == 2 && targetDist>0) {
+			targetDist-=20;
+			System.out.println("New Target Distance: "+Integer.toString(targetDist));
+			missedCount=0;
+		}
 		
 	}
 	
