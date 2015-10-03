@@ -124,7 +124,6 @@ public class VoltzWagon extends AdvancedRobot
 				System.out.println("Radar is currently " + Double.toString(getRadarHeading()));
 				System.out.println("Radar bearing is " + Double.toString(radarBearing));
 			}
-			setAhead(20);
 			
 			execute();
 		}
@@ -144,13 +143,13 @@ public class VoltzWagon extends AdvancedRobot
 		if (toTurn>360) {toTurn-=360;}
 		if (toTurn<-360) {toTurn+=360;}
 		if (toTurn>180) {
-			turnGunLeft(toTurn-180);
+			setTurnGunLeft(toTurn-180);
 		} else {
-			turnGunRight(toTurn);
+			setTurnGunRight(toTurn);
 		}
 		//turnRight(e.getBearing());
 		//System.out.println(Double.toString(toTurn));
-		fire(3);//
+		setFire(3);//
 		
 		if (e.getDistance()>250) {
 			toTurn = e.getBearing()+45;
