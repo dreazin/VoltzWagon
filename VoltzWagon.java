@@ -6,7 +6,7 @@ import java.lang.Math;
 // API help : http://robocode.sourceforge.net/docs/robocode/robocode/Robot.html
 
 /**
- * VoltzWagon - a robot by (your name here)
+ * VoltzWagon - a robot by Dave and John
  */
 public class VoltzWagon extends AdvancedRobot
 {
