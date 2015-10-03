@@ -138,7 +138,9 @@ public class VoltzWagon extends AdvancedRobot
 			enemy = new SeenRobot(e);
 		else
 			enemy.update(e);
-		/*double toTurn = (getHeading()-getGunHeading())+e.getBearing();
+        
+		// Replace the next line with any behavior you would like
+		double toTurn = (getHeading()-getGunHeading())+e.getBearing();
 		if (toTurn>360) {toTurn-=360;}
 		if (toTurn<-360) {toTurn+=360;}
 		if (toTurn>180) {
